@@ -17,6 +17,6 @@ while StillPlaying:
         if yn.upper() != "Y" and yn.upper() != "N":
             print("You have not selected a valid option, please enter 'Y' for Yes or 'N' for No!") 
         
-        if yn == "N":
+        if yn.upper() == "N":
             StillPlaying = False
 
