@@ -1,6 +1,12 @@
+from glob import glob
 import random
 import os
 import art
+
+# Debug Mode flag, to disable set to False
+_debugMode = False
+
+
 
 cardPool = []
 playerCards = []
@@ -8,9 +14,12 @@ computerCards = []
 PlayerName = ""
 playerCardsValue = 0
 computerCardsValue = 0
-
+remainingCards = 0
+cardPoolIsReset = False
 num_of_decks = 4
+
 suits = ["diamonds", "hearts", "clubs", "spades"]    
+
 cards_in_suits = {
     "ace": 11, 
     "king": 10, 
@@ -44,7 +53,7 @@ def print_text_centered(textToPrint):
     term_width = get_terminal_width()
 
     if type(textToPrint) == str:
-
+        # Convert Multi-Line strings into a list
         newTextToPrint = textToPrint.split("\n")
         textToPrint = newTextToPrint
 
@@ -82,6 +91,11 @@ def get_player_cards_artwork(PlayerType):
 
 def reset_card_pool():
 
+    #Init or reset the pool of available cards
+
+    global remainingCards
+    global cardPoolIsReset
+
     cardPool.clear()
 
     for count in range(num_of_decks):
@@ -95,24 +109,26 @@ def reset_card_pool():
                     }
                 )
     random.shuffle(cardPool)
-    
-#def show_cards():
-#     for card in cardPool:
-#         s = card["Suit"]
-#         v = card["ValueName"]
-#         print(f"{v} of {s}")
-#     print(f"Total Cards: {len(cardPool)}")
-
+    remainingCards = len(cardPool)
+    cardPoolIsReset = True
 
 
 def deal_card():
+
+    #Randomly select a card from the card pool, remove it from the pool and return it.
+
+    global remainingCards
+
     selectedCardIdx = random.randint(0, len(cardPool) -1)
     selectedCard = cardPool[selectedCardIdx]
     cardPool.pop(selectedCardIdx)
     return selectedCard.copy()
+    remainingCards = len(cardPool)
 
 
 def resetPlayerCards():
+
+    #Reset all players initial cards
 
     global playerCards
     global computerCards
@@ -124,7 +140,17 @@ def resetPlayerCards():
     computerCardsValue = 0
     playerCardsValue = 0
 
+
 def deal_initial_cards():
+
+    #Deal players their initial two cards, 2 cards each with one for the dealer remaining hidden
+
+    # Check the number of remaining cards, if 25% or less of the original number then shuffle the decks
+    
+    global remainingCards
+
+    if remainingCards <= int((num_of_decks * 52) * (25/100)):
+        reset_card_pool()
 
        
     deal_card_to_player("Human", False)
@@ -132,20 +158,12 @@ def deal_initial_cards():
     deal_card_to_player("Human", False)
     deal_card_to_player("Computer", True)
 
-    # Debug Code
-    #deal_card_to_player("Human", False)
-
-    # global playerCards
-    # playerCards.append(
-    #     {
-    #         "Suit": "Clubs",
-    #         "ValueName": "ace",
-    #         "Value": 11,
-    #         "Hidden": False
-    #     }
-    # )
 
 def deal_card_to_player(playerType, HiddenCard):
+
+    #Deal a card to the specifid player, accepts player types of Human or Computer
+
+    global remainingCards
 
     if playerType == "Human":
         newCard = deal_card()
@@ -168,10 +186,17 @@ def deal_card_to_player(playerType, HiddenCard):
             }
         )
 
+    remainingCards = len(cardPool)
+
 def print_game_art():
+
+    # Prints the game artwork to the console
 
     global playerCardsValue
     global computerCardsValue
+    global cardPoolIsReset
+
+    global _debugMode
 
     playerCardsValue = get_card_values("Human")
     computerCardsValue = get_card_values("Computer")
@@ -181,7 +206,17 @@ def print_game_art():
     print_text_centered(art.DividerTwo)
     print_text_centered(art.logo)
     print_text_centered(art.DividerTwo)
-    print("\n")
+
+    if cardPoolIsReset:
+        print_text_centered(f"Cards have been Shuffled!\n")
+        cardPoolIsReset = False
+    else:
+        if _debugMode:
+            print_text_centered(f"Cards Ramining: {remainingCards}\n")
+        else:
+            print("\n")
+
+
     print_text_centered(art.DividerOne)
     print_text_centered("Dealer")
     print_text_centered(art.DividerOne)
@@ -199,6 +234,14 @@ def print_game_art():
 
 def get_card_values(PlayerType):
 
+    # Determine the value of the cards in a players hand accounting for
+    # Ace value being either 11 or 1, and the dealer having hidden cards
+
+    # TODO 1:
+    # Optimise logic, currently a single Ace will show a value of 1 where it should show 11
+    # Rework logic and refactor code
+
+
     totalValue = 0
     numOfAces = 0
     HiddenCard = False
@@ -209,21 +252,18 @@ def get_card_values(PlayerType):
         cardsToCheck = computerCards
 
 
-
     # Get the number of ACE's
     numOfAces = 0
     for card in cardsToCheck:
         if card["Hidden"]:
             HiddenCard = True
-        if (card["ValueName"] == "ace" and card["Hidden"] == False):
+
+        if (card["ValueName"] == "ace" and HiddenCard == False):
             numOfAces += 1
         else:
             # Get total of Non-Ace cards
-            if not card["Hidden"]:
+            if not HiddenCard:
                 totalValue += card["Value"]
-
-
-
 
 
     if totalValue == 10 and numOfAces == 1:
@@ -323,8 +363,3 @@ def play_blackjack():
         print_text_centered("\nYOU WIN!")
     else:
         print_text_centered("\nIt is a Draw!")
-
-
-
-            
-            

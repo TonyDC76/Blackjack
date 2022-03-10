@@ -3,11 +3,11 @@ import game
 
 StillPlaying = True
 
-
 game.reset_card_pool()
 game.PlayerName = input("Please enter your name: ")
 
 while StillPlaying:
+    
     game.play_blackjack()
 
     yn = ""
